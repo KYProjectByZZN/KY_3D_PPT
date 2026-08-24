@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "excel_filename": "excel_mapping_demo.xlsx",
+  "mappings": [
+    {
+      "sheet": "方案数据",
+      "source_range": "B1",
+      "target_slot": "project_title",
+      "mode": "text",
+      "separator": "\n",
+      "enabled": true
+    },
+    {
+      "sheet": "方案数据",
+      "source_range": "B2",
+      "target_slot": "project_code",
+      "mode": "text",
+      "separator": "\n",
+      "enabled": true
+    },
+    {
+      "sheet": "方案数据",
+      "source_range": "B3",
+      "target_slot": "project_date",
+      "mode": "text",
+      "separator": "\n",
+      "enabled": true
+    },
+    {
+      "sheet": "方案数据",
+      "source_range": "A6:D12",
+      "target_slot": "equipment_parameters",
+      "mode": "table",
+      "separator": "\n",
+      "enabled": true
+    },
+    {
+      "sheet": "方案数据",
+      "source_range": "A15:E23",
+      "target_slot": "inspection_items",
+      "mode": "table",
+      "separator": "\n",
+      "enabled": true
+    }
+  ]
+}

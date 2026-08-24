@@ -1,0 +1,1149 @@
+# 任务：调研 AI + 模板驱动 + 模块化 PPT 自动生成系统
+
+我准备开发一套“AI PPT 自动生成平台”，请你先不要开发代码，而是进行一次系统性的 GitHub + 全网技术调研，寻找可以直接使用、二次开发、参考架构或组合使用的成熟项目。
+
+本项目不希望重复造轮子。
+
+---
+
+# 一、我的项目目标
+
+我要开发一个 PPT 自动生成软件。
+
+这个软件不是简单的“输入一句话 → AI 自动生成一套 PPT”，而是一个：
+
+**类型化 + Skill 驱动 + 模板驱动 + 模块化页面生成 + AI 内容生成 + PPTX 输出**
+
+的 PPT 生成平台。
+
+整体逻辑类似：
+
+```text
+PPT Generator
+│
+├── PPT Type
+│   ├── 技术方案
+│   ├── 产品介绍
+│   ├── 公司介绍
+│   ├── 项目汇报
+│   ├── 销售方案
+│   ├── 投标方案
+│   └── 后续可扩展其他类型
+│
+├── Skill
+│   ├── technical-proposal-skill
+│   ├── product-intro-skill
+│   └── ...
+│
+├── Template
+│   ├── 技术方案模板A
+│   ├── 技术方案模板B
+│   └── ...
+│
+├── Module
+│   ├── 封面
+│   ├── 目录
+│   ├── 客户需求
+│   ├── 项目分析
+│   ├── 技术路线
+│   ├── 机械方案
+│   ├── 光学方案
+│   ├── 软件方案
+│   ├── 检测流程
+│   ├── 节拍分析
+│   ├── 设备参数
+│   ├── 项目优势
+│   ├── 案例
+│   └── 总结
+│
+├── Page Layout
+│   ├── Module对应多个页面模板
+│   ├── 图文布局
+│   ├── 参数表
+│   ├── 流程图
+│   ├── 架构图
+│   ├── 对比图
+│   ├── 图片展示页
+│   └── 数据页面
+│
+└── Renderer
+    └── 生成最终 PPTX
+```
+
+---
+
+# 二、第一个开发目标
+
+第一阶段先开发：
+
+# “自动化设备技术方案 PPT”
+
+应用场景主要是工业自动化、机器视觉、光学筛选机、非标自动化设备等。
+
+例如销售拿到客户需求后：
+
+```text
+客户需求
+↓
+AI分析
+↓
+选择技术方案Skill
+↓
+判断应该使用哪些模块
+↓
+选择对应PPT模板
+↓
+从模板库中选择合适页面
+↓
+生成文字
+↓
+生成/插入机械方案图、产品图、流程图、架构图
+↓
+填充参数
+↓
+自动排版
+↓
+生成PPTX
+↓
+人工修改
+```
+
+重点不是让 AI 自由设计每一页。
+
+而是：
+
+**模板负责稳定性，Skill负责逻辑，AI负责内容生成和模板选择。**
+
+---
+
+# 三、重点帮我搜索的项目类型
+
+请在 GitHub、GitLab、HuggingFace、npm、PyPI、技术博客、开发者社区和公开互联网中重点搜索以下方向。
+
+## 1. AI PPT Generator
+
+搜索：
+
+```text
+AI PPT generator
+LLM PPT generator
+GPT PowerPoint generator
+AI presentation generator
+automatic presentation generator
+presentation generation LLM
+PPT agent
+PowerPoint agent
+slide generation agent
+```
+
+寻找可以：
+
+* 输入需求生成PPT
+* LLM规划PPT结构
+* 自动选择Layout
+* 自动生成页面
+* 自动生成PPTX
+* 自动生成图片/图表
+* 支持模板
+
+的项目。
+
+---
+
+## 2. Template-driven PPT
+
+重点搜索：
+
+```text
+PowerPoint template automation
+PPT template engine
+PPTX template engine
+PowerPoint template generator
+template driven pptx
+pptx placeholder replacement
+PowerPoint layout automation
+```
+
+我要重点研究：
+
+**如何把现有公司 PPT 模板转换成可程序化调用的模板。**
+
+例如：
+
+```text
+template/
+    technical-proposal/
+        template.pptx
+
+        cover/
+            layout01
+            layout02
+
+        requirement/
+            layout01
+            layout02
+            layout03
+
+        solution/
+            layout01
+            layout02
+
+        parameter/
+            layout01
+
+        case/
+            layout01
+            layout02
+```
+
+AI只负责决定：
+
+```text
+使用哪个Module
++
+使用哪个Layout
++
+往Layout里面填什么内容
+```
+
+---
+
+# 四、重点研究 PPTX 操作库
+
+寻找和比较：
+
+### JavaScript / TypeScript
+
+```text
+PptxGenJS
+pptxgenjs
+officegen
+pptx
+PowerPoint JavaScript generation
+```
+
+### Python
+
+```text
+python-pptx
+pptxgen
+PowerPoint automation python
+```
+
+### Office / Microsoft
+
+研究：
+
+```text
+Office.js
+Microsoft Graph PowerPoint
+PowerPoint COM
+Open XML SDK
+OOXML
+```
+
+重点判断：
+
+哪一种技术路线最适合：
+
+```text
+Web应用
++
+AI
++
+模板系统
++
+复杂PPT生成
++
+现有PPT模板复用
++
+图片
++
+表格
++
+流程图
++
+技术方案
++
+最终PPTX可编辑
+```
+
+---
+
+# 五、重点搜索“模块化页面系统”
+
+搜索：
+
+```text
+slide component library
+presentation component library
+ppt component system
+slide layout engine
+presentation layout engine
+React PowerPoint
+React pptx
+JSON to PowerPoint
+schema driven presentation
+```
+
+寻找有没有这样的架构：
+
+```text
+JSON
+↓
+Slide Schema
+↓
+Component
+↓
+Layout
+↓
+PPTX
+```
+
+例如：
+
+```json
+{
+  "type": "technical_solution",
+  "layout": "solution_02",
+  "title": "设备总体方案",
+  "content": "...",
+  "images": [],
+  "parameters": {}
+}
+```
+
+然后渲染成 PPT。
+
+这个方向非常重要。
+
+---
+
+# 六、重点搜索 AI Agent / Skill 架构
+
+我要让不同 PPT 类型拥有不同 Skill。
+
+例如：
+
+```text
+skills/
+
+technical-proposal/
+    SKILL.md
+    requirements.md
+    modules.json
+    workflow.json
+    prompts/
+    examples/
+
+product-introduction/
+    SKILL.md
+
+company-introduction/
+    SKILL.md
+```
+
+技术方案 Skill 应该知道：
+
+* 技术方案应该包含什么
+* 哪些页面必须有
+* 哪些页面可选
+* 怎么分析客户需求
+* 什么内容不能遗漏
+* 哪种信息应该生成表格
+* 哪种信息应该生成流程图
+* 什么情况下需要机械方案图
+* 什么情况下需要节拍分析
+* 什么情况下需要风险说明
+
+请寻找类似：
+
+```text
+Agent Skill Architecture
+AI skill system
+Claude Skills
+Codex Skills
+Prompt skill framework
+Agent workflow framework
+Agent plugin architecture
+```
+
+看看有没有成熟架构可以直接借鉴。
+
+---
+
+# 七、重点搜索成熟 AI PPT 项目
+
+特别关注类似以下产品/项目的开源替代方案、实现原理或同类项目：
+
+```text
+Gamma
+Beautiful.ai
+Canva presentation AI
+Tome
+Pitch
+SlidesAI
+Plus AI
+Presentations.ai
+Decktopus
+```
+
+注意：
+
+不是只介绍这些产品。
+
+我要寻找：
+
+**这些产品背后的开源实现思路 / 相似 GitHub 项目 / 可以二次开发的项目。**
+
+---
+
+# 八、重点搜索现有优秀开源项目
+
+搜索 GitHub 时：
+
+优先：
+
+```text
+stars > 500
+最近2年仍在维护
+有完整README
+有Demo
+有实际生成PPTX能力
+架构清晰
+License允许二次开发
+```
+
+但不要因为 Star 少就直接排除。
+
+如果某项目：
+
+* 架构非常适合
+* 代码质量高
+* 解决了关键问题
+* 最近刚出现
+
+即使 Star 少也列出来。
+
+---
+
+# 九、重点寻找这些能力
+
+请给每个项目检查下面能力。
+
+| 能力             | 是否支持 |
+| -------------- | ---- |
+| PPTX生成         |      |
+| PPT模板导入        |      |
+| 保留原模板          |      |
+| Placeholder    |      |
+| Master/Layout  |      |
+| AI生成内容         |      |
+| AI选择Layout     |      |
+| 图片生成           |      |
+| 图片插入           |      |
+| 表格             |      |
+| Chart          |      |
+| Mermaid        |      |
+| SVG            |      |
+| 流程图            |      |
+| JSON → PPT     |      |
+| HTML → PPT     |      |
+| Markdown → PPT |      |
+| Web编辑器         |      |
+| PPT预览          |      |
+| 页面拖拽           |      |
+| 模块化Slide       |      |
+| Plugin         |      |
+| Skill          |      |
+| Agent          |      |
+| PPTX可编辑        |      |
+
+---
+
+# 十、我尤其关心的问题
+
+请重点调查以下几个问题。
+
+## 问题1
+
+有没有成熟项目可以做到：
+
+```text
+已有PPT模板
+↓
+解析Master / Layout / Placeholder
+↓
+AI选择Layout
+↓
+替换文字/图片/表格
+↓
+输出新的PPTX
+```
+
+---
+
+## 问题2
+
+有没有项目实现：
+
+```text
+PPT页面组件库
+```
+
+例如：
+
+```text
+标题+大图
+左图右文
+三栏
+四宫格
+流程图
+时间轴
+参数表
+数据卡片
+案例页
+设备方案页
+```
+
+程序可以像组件一样调用。
+
+---
+
+## 问题3
+
+有没有：
+
+```text
+JSON / DSL → PPT
+```
+
+的成熟项目。
+
+例如：
+
+```text
+AI
+↓
+生成JSON
+↓
+Renderer
+↓
+PPTX
+```
+
+我认为这种架构可能比让 LLM 直接操作 PPT 更稳定。
+
+请重点验证。
+
+---
+
+## 问题4
+
+有没有类似：
+
+```text
+React Component → PPTX
+```
+
+的方案。
+
+如果有，重点分析是否适合建立：
+
+```text
+Slide Component Library
+```
+
+---
+
+## 问题5
+
+如何做到：
+
+```text
+AI只负责“选择模板 + 生成内容”
+而不是AI负责坐标和排版
+```
+
+寻找已有实现。
+
+---
+
+# 十一、工业技术方案场景
+
+我的第一个 Skill 是：
+
+```text
+Industrial Technical Proposal
+工业自动化技术方案
+```
+
+典型页面：
+
+```text
+01 封面
+02 公司介绍
+03 客户需求
+04 产品分析
+05 检测需求
+06 技术路线
+07 设备总体方案
+08 机械结构方案
+09 上料方案
+10 搬运方案
+11 定位方案
+12 光学检测方案
+13 相机布局
+14 光源方案
+15 检测流程
+16 软件流程
+17 AI算法
+18 节拍分析
+19 产能分析
+20 设备参数
+21 电气配置
+22 核心部件
+23 风险分析
+24 项目优势
+25 项目案例
+26 交付计划
+27 售后服务
+28 总结
+```
+
+但每次客户项目不会全部使用。
+
+AI应该根据客户项目选择：
+
+```text
+28个Module中的10~20个
+```
+
+每个 Module 又有：
+
+```text
+3~10种Layout
+```
+
+最终选择最合适的页面。
+
+请重点寻找和这个设计思想接近的系统。
+
+---
+
+# 十二、请不要只搜索“PPT生成”
+
+同时搜索这些邻近领域。
+
+因为很多优秀架构可能不是专门为了PPT开发。
+
+包括：
+
+```text
+Report Generator
+Document Generator
+Template Engine
+Design System
+Component System
+PDF Generator
+Canva Clone
+Slide Editor
+Presentation Editor
+Document Agent
+Report Agent
+Proposal Generator
+Proposal Automation
+Sales Proposal Generator
+Technical Proposal Generator
+Document Assembly
+```
+
+我可以借用这些项目的：
+
+* 模板管理
+* Block系统
+* Component系统
+* Schema
+* Editor
+* Workflow
+* Agent
+* Renderer
+
+---
+
+# 十三、输出要求
+
+最终给我输出一份：
+
+# 《AI PPT生成平台开源项目与技术路线调研报告》
+
+不要简单罗列 GitHub 项目。
+
+按照下面结构输出。
+
+---
+
+## 第一部分：结论
+
+直接告诉我：
+
+### 最值得研究的 Top 10 项目
+
+并分类：
+
+```text
+A类：可以直接作为底座
+
+B类：适合抽取核心能力
+
+C类：适合参考架构
+
+D类：只值得参考某一个模块
+```
+
+---
+
+# 第二部分：项目表
+
+每个项目必须包含：
+
+```text
+项目名
+GitHub地址
+官方网站
+Star
+最近更新时间
+主要语言
+License
+
+项目定位
+
+核心功能
+
+技术架构
+
+PPT生成方式
+
+模板机制
+
+Layout机制
+
+组件机制
+
+AI机制
+
+是否支持Web
+
+是否可以二次开发
+
+适合本项目的部分
+
+不适合本项目的部分
+
+二次开发难度
+
+推荐指数
+```
+
+---
+
+# 第三部分：项目对比矩阵
+
+至少比较：
+
+```text
+15~30个项目
+```
+
+做成表格。
+
+评分：
+
+```text
+模板能力      /10
+PPT能力       /10
+AI能力        /10
+模块化能力    /10
+Web能力       /10
+扩展能力      /10
+代码质量      /10
+项目成熟度    /10
+本项目匹配度  /10
+```
+
+---
+
+# 第四部分：重点项目源码分析
+
+选择：
+
+```text
+3~5个最值得研究的项目
+```
+
+进一步分析它们代码。
+
+至少分析：
+
+```text
+目录结构
+核心模块
+PPT Renderer
+Template Engine
+Slide Model
+Layout Model
+数据结构
+API
+前端
+后端
+AI调用
+Prompt
+Agent
+```
+
+指出：
+
+**哪些代码可以直接复用。**
+
+如果必要，可以 clone repo 阅读源码后再回答。
+
+不要只看 README。
+
+---
+
+# 第五部分：给出推荐技术架构
+
+结合调研结果，给我设计：
+
+```text
+AI PPT Generator
+
+Frontend
+Backend
+AI Orchestrator
+Skill Engine
+Template Engine
+Module Engine
+Layout Engine
+Asset Manager
+Knowledge Base
+Renderer
+PPTX Exporter
+Preview Engine
+```
+
+给出完整架构图。
+
+---
+
+# 第六部分：确定数据模型
+
+重点设计：
+
+```text
+PPTType
+
+Skill
+
+Template
+
+Module
+
+SlideLayout
+
+SlideSchema
+
+ContentBlock
+
+Asset
+
+Project
+
+GeneratedPresentation
+```
+
+给出这些对象之间关系。
+
+---
+
+# 第七部分：确定生成流程
+
+建议重点研究这种方式：
+
+```text
+用户需求
+↓
+Requirement Analyzer
+↓
+PPT Type Router
+↓
+Skill
+↓
+Outline Planner
+↓
+Module Selector
+↓
+Layout Selector
+↓
+Content Generator
+↓
+Asset Generator
+↓
+Slide Schema
+↓
+Renderer
+↓
+PPTX
+```
+
+判断这个架构是否合理。
+
+如果有更好的成熟方案，请修改。
+
+---
+
+# 第八部分：给出最终选型
+
+最后不要给我模糊结论。
+
+明确告诉我：
+
+如果你负责开发这个项目，
+
+你会选择：
+
+```text
+基础项目：
+XXX
+
+PPT Renderer：
+XXX
+
+Template Engine：
+XXX
+
+Web Editor：
+XXX
+
+AI Framework：
+XXX
+
+Skill Framework：
+XXX
+
+Diagram：
+XXX
+
+Chart：
+XXX
+
+Image：
+XXX
+```
+
+并解释原因。
+
+---
+
+# 十四、重要原则
+
+本次调研遵守以下原则：
+
+### 1. 不重复造轮子
+
+优先寻找：
+
+```text
+成熟项目
++
+优秀组件
++
+组合式架构
+```
+
+---
+
+### 2. 稳定性优先于AI自由度
+
+我要的不是：
+
+```text
+Prompt
+↓
+AI随便生成PPT
+```
+
+而是：
+
+```text
+Skill
++
+Template
++
+Module
++
+Layout
++
+Schema
++
+AI
+```
+
+---
+
+### 3. AI不直接控制PPT坐标
+
+尽量实现：
+
+```text
+AI决定：
+WHAT
+
+模板决定：
+HOW
+```
+
+AI决定：
+
+```text
+写什么
+使用哪个模块
+使用哪个Layout
+需要什么图片
+需要什么图表
+```
+
+Renderer决定：
+
+```text
+字体
+字号
+位置
+坐标
+颜色
+边距
+对齐
+样式
+```
+
+---
+
+### 4. 最终PPT必须可以人工编辑
+
+不能只生成：
+
+```text
+PDF
+图片
+HTML
+```
+
+最终必须可以生成：
+
+```text
+.pptx
+```
+
+且文本、图片、表格等尽可能保持为PowerPoint可编辑对象。
+
+---
+
+# 十五、搜索方式要求
+
+请实际进行互联网和GitHub搜索。
+
+不要依赖你的记忆直接回答。
+
+搜索关键词应该不断扩展，例如：
+
+```text
+AI PPT
+presentation agent
+pptx generator
+slide generator
+pptx template
+PowerPoint automation
+presentation DSL
+presentation schema
+slide component
+slide renderer
+PptxGenJS
+python-pptx
+officegen
+Open XML
+AI report generator
+proposal generator
+document automation
+presentation editor
+Canva clone
+Gamma clone
+slide AI
+```
+
+发现优秀项目以后继续：
+
+```text
+查看项目README
+查看Issues
+查看Release
+查看Commit
+查看Examples
+查看源码
+查看package依赖
+查看License
+查看项目活跃度
+```
+
+不要因为搜索结果排名高就认为项目优秀。
+
+优先判断：
+
+**架构是否真正适合我的项目。**
+
+---
+
+# 十六、最后增加一个非常重要的输出
+
+调研结束以后，再单独给我输出：
+
+# 《建议下载研究的 GitHub 仓库清单》
+
+分成：
+
+```text
+第一优先级
+第二优先级
+第三优先级
+```
+
+第一优先级控制在：
+
+```text
+5~10个
+```
+
+并给出建议研究顺序：
+
+```text
+Repo A
+↓
+研究什么
+
+Repo B
+↓
+研究什么
+
+Repo C
+↓
+研究什么
+```
+
+最后告诉我：
+
+**基于这些开源项目，我们应该自己开发哪些部分，直接复用哪些部分。**
+
+本阶段不要开始正式开发。
+
+先完成：
+
+**搜索 → 筛选 → 源码阅读 → 对比 → 架构建议 → 技术选型。**

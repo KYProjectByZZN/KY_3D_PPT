@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "template": {
+    "filename": "冲压筒形壳体检测方案NAT6704_v2.pptx",
+    "sha256": "795ACCABC0BB6B6EFC619E585A17A2BCA8E03C8B418CE5F8223DF1962A058CDF",
+    "slide_count": 23
+  },
+  "modules": [
+    {"key": "cover", "name": "封面", "slides": [1]},
+    {"key": "company_intro", "name": "公司介绍", "slides": [2]},
+    {"key": "customer_requirement", "name": "需求概览", "slides": [3]},
+    {"key": "inspection_flow", "name": "检测流程", "slides": [4], "flow_capacity": 8},
+    {"key": "equipment_overview", "name": "设备总览", "slides": [5]},
+    {
+      "key": "equipment_module",
+      "name": "设备模块",
+      "type": "dataDriven",
+      "slides": [6, 7, 8, 9],
+      "page_templates": [
+        {"key": "equipment_module_page_6", "name": "设备俯视总览", "source_slide": 6, "role": "content", "remove_shape_ids": [3, 5, 6, 10, 14, 15, 16, 17, 18, 19, 21, 23, 24, 25, 27, 29, 37]},
+        {"key": "equipment_module_page_7", "name": "模块说明·右侧大图", "source_slide": 7, "role": "content", "remove_shape_ids": [3, 5, 8, 9, 10, 11, 19, 27]},
+        {"key": "equipment_module_page_8", "name": "模块说明·右侧结构图", "source_slide": 8, "role": "content", "remove_shape_ids": [3, 5, 19]},
+        {"key": "equipment_module_page_9", "name": "模块说明·下料版式", "source_slide": 9, "role": "content", "remove_shape_ids": [7, 9, 11, 19, 21, 23]}
+      ],
+      "default_sequence": [
+        "equipment_module_page_6",
+        "equipment_module_page_7",
+        "equipment_module_page_8",
+        "equipment_module_page_9"
+      ],
+      "default_add_template": "equipment_module_page_7"
+    },
+    {"key": "equipment_parameters", "name": "设备参数", "slides": [10]},
+    {"key": "inspection_result", "name": "检测效果", "slides": [11, 12, 13, 14, 15]},
+    {"key": "inspection_items", "name": "检测项目", "slides": [16]},
+    {"key": "vision_system", "name": "视觉系统", "slides": [17]},
+    {"key": "control_system", "name": "工控系统", "slides": [18]},
+    {"key": "ai_algorithm", "name": "AI 算法", "slides": [19]},
+    {"key": "core_components", "name": "主要部件", "slides": [20]},
+    {"key": "company_qualification", "name": "公司资质", "slides": [21]},
+    {"key": "revision_record", "name": "版本记录", "slides": [22]},
+    {"key": "ending", "name": "结束页", "slides": [23]}
+  ],
+  "slots": [
+    {"key": "company_name", "slide": 1, "shape_id": 6, "kind": "text", "required": false, "max_chars": 40},
+    {"key": "project_title", "slide": 1, "shape_id": 7, "kind": "text", "required": true, "max_chars": 60},
+    {"key": "project_code", "slide": 1, "shape_id": 10261, "kind": "text", "required": false, "max_chars": 30},
+    {"key": "project_date", "slide": 1, "shape_id": 10262, "kind": "text", "required": false, "max_chars": 20},
+    {"key": "contact", "slide": 1, "shape_id": 3, "kind": "text", "required": false, "max_chars": 200},
+
+    {"key": "requirement_title", "slide": 3, "shape_id": 23553, "kind": "text", "required": false, "max_chars": 30},
+    {"key": "inspection_summary", "slide": 3, "shape_id": 7, "kind": "text", "required": false, "max_chars": 220},
+    {"key": "special_notes", "slide": 3, "shape_id": 5, "kind": "text", "required": false, "max_chars": 320},
+    {"key": "special_notes_title", "slide": 3, "shape_id": 8, "kind": "text", "required": false, "max_chars": 20},
+    {"key": "product_caption", "slide": 3, "shape_id": 2, "kind": "text", "required": false, "max_chars": 50},
+    {"key": "product_image", "slide": 3, "shape_id": 43, "kind": "image", "required": false, "aspect_ratio": "template_crop"},
+
+    {"key": "flow_title", "slide": 4, "shape_id": 23553, "kind": "text", "required": false, "max_chars": 30},
+    {"key": "flow_step_01", "slide": 4, "shape_id": 22, "kind": "text", "required": false, "max_chars": 16},
+    {"key": "flow_step_02", "slide": 4, "shape_id": 54, "kind": "text", "required": false, "max_chars": 16},
+    {"key": "flow_step_03", "slide": 4, "shape_id": 55, "kind": "text", "required": false, "max_chars": 16},
+    {"key": "flow_step_04", "slide": 4, "shape_id": 56, "kind": "text", "required": false, "max_chars": 16},
+    {"key": "flow_step_05", "slide": 4, "shape_id": 58, "kind": "text", "required": false, "max_chars": 16},
+    {"key": "flow_step_06", "slide": 4, "shape_id": 8, "kind": "text", "required": false, "max_chars": 16},
+    {"key": "flow_step_07", "slide": 4, "shape_id": 9, "kind": "text", "required": false, "max_chars": 16},
+    {"key": "flow_step_08", "slide": 4, "shape_id": 12, "kind": "text", "required": false, "max_chars": 16},
+    {"key": "flow_aux_vision", "slide": 4, "shape_id": 23559, "kind": "text", "label": "流程辅助·视觉检测", "required": false, "max_chars": 16},
+    {"key": "flow_aux_station", "slide": 4, "shape_id": 2, "kind": "text", "label": "流程辅助·检测工位", "required": false, "max_chars": 16},
+    {"key": "flow_aux_reject", "slide": 4, "shape_id": 5, "kind": "text", "label": "流程辅助·剔料", "required": false, "max_chars": 16},
+    {"key": "flow_aux_container", "slide": 4, "shape_id": 59, "kind": "text", "label": "流程辅助·周转", "required": false, "max_chars": 16},
+    {"key": "flow_result_minor_ng", "slide": 4, "shape_id": 61, "kind": "text", "label": "流程结果·复检", "required": false, "max_chars": 8},
+    {"key": "flow_result_severe_ng", "slide": 4, "shape_id": 4, "kind": "text", "label": "流程结果·NG下料", "required": false, "max_chars": 8},
+    {"key": "flow_result_ok", "slide": 4, "shape_id": 16, "kind": "text", "required": false, "max_chars": 8},
+    {"key": "flow_result_ng", "slide": 4, "shape_id": 17, "kind": "text", "required": false, "max_chars": 8},
+    {"key": "flow_caption", "slide": 4, "shape_id": 3, "kind": "text", "required": false, "max_chars": 50},
+
+    {"key": "equipment_title", "slide": 5, "shape_id": 4, "kind": "text", "required": false, "max_chars": 30},
+    {"key": "equipment_description", "slide": 5, "shape_id": 10, "kind": "text", "required": false, "max_chars": 260},
+    {"key": "equipment_caption", "slide": 5, "shape_id": 11, "kind": "text", "required": false, "max_chars": 50},
+    {"key": "equipment_image", "slide": 5, "shape_id": 3, "kind": "image", "required": false, "aspect_ratio": "template_crop"},
+
+    {"key": "equipment_module_title_s6", "slide": 6, "shape_id": 4, "kind": "text", "label": "模块标题", "group": "设备模块", "required": false, "max_chars": 50},
+    {"key": "equipment_module_description_s6", "slide": 6, "shape_id": 9, "kind": "text", "label": "模块说明", "group": "设备模块", "required": false, "max_chars": 450},
+    {"key": "equipment_module_image_s6", "slide": 6, "shape_id": 20, "kind": "image", "label": "模块方案图", "group": "设备模块", "required": false, "aspect_ratio": "template_crop", "asset_category": "设备图"},
+    {"key": "equipment_module_caption_s6", "slide": 6, "shape_id": 8, "kind": "text", "label": "模块图题", "group": "设备模块", "required": false, "max_chars": 60},
+    {"key": "equipment_module_note_s6", "slide": 6, "shape_id": 13, "kind": "text", "label": "模块备注", "group": "设备模块", "required": false, "max_chars": 160},
+
+    {"key": "equipment_module_title_s7", "slide": 7, "shape_id": 4, "kind": "text", "label": "模块标题", "group": "设备模块", "required": false, "max_chars": 50},
+    {"key": "equipment_module_description_s7", "slide": 7, "shape_id": 2, "kind": "text", "label": "模块说明", "group": "设备模块", "required": false, "max_chars": 420},
+    {"key": "equipment_module_image_s7", "slide": 7, "shape_id": 7, "kind": "image", "label": "模块方案图", "group": "设备模块", "required": false, "aspect_ratio": "template_crop", "asset_category": "设备图"},
+    {"key": "equipment_module_caption_s7", "slide": 7, "shape_id": 13, "kind": "text", "label": "模块图题", "group": "设备模块", "required": false, "max_chars": 60},
+
+    {"key": "equipment_module_title_s8", "slide": 8, "shape_id": 4, "kind": "text", "label": "模块标题", "group": "设备模块", "required": false, "max_chars": 50},
+    {"key": "equipment_module_description_s8", "slide": 8, "shape_id": 2, "kind": "text", "label": "模块说明", "group": "设备模块", "required": false, "max_chars": 420},
+    {"key": "equipment_module_image_s8", "slide": 8, "shape_id": 6, "kind": "image", "label": "模块方案图", "group": "设备模块", "required": false, "aspect_ratio": "template_crop", "asset_category": "设备图"},
+    {"key": "equipment_module_caption_s8", "slide": 8, "shape_id": 13, "kind": "text", "label": "模块图题", "group": "设备模块", "required": false, "max_chars": 60},
+
+    {"key": "equipment_module_title_s9", "slide": 9, "shape_id": 4, "kind": "text", "label": "模块标题", "group": "设备模块", "required": false, "max_chars": 50},
+    {"key": "equipment_module_description_s9", "slide": 9, "shape_id": 5, "kind": "text", "label": "模块说明", "group": "设备模块", "required": false, "max_chars": 420},
+    {"key": "equipment_module_image_s9", "slide": 9, "shape_id": 2, "kind": "image", "label": "模块方案图", "group": "设备模块", "required": false, "aspect_ratio": "template_crop", "asset_category": "设备图"},
+    {"key": "equipment_module_caption_s9", "slide": 9, "shape_id": 8, "kind": "text", "label": "模块图题", "group": "设备模块", "required": false, "max_chars": 60},
+    {"key": "equipment_module_note_s9", "slide": 9, "shape_id": 13, "kind": "text", "label": "模块备注", "group": "设备模块", "required": false, "max_chars": 160},
+
+    {"key": "parameters_title", "slide": 10, "shape_id": 4, "kind": "text", "required": false, "max_chars": 30},
+    {"key": "equipment_parameters", "slide": 10, "shape_id": 3, "kind": "table", "required": false, "rows": 7, "columns": 4},
+    {"key": "parameter_note", "slide": 10, "shape_id": 6, "kind": "text", "required": false, "max_chars": 120},
+    {"key": "parameter_caption", "slide": 10, "shape_id": 7, "kind": "text", "required": false, "max_chars": 50},
+
+    {"key": "far_result_title", "slide": 11, "shape_id": 4, "kind": "text", "required": false, "max_chars": 50},
+    {"key": "far_result_camera", "slide": 11, "shape_id": 8, "kind": "text", "required": false, "max_chars": 60},
+    {"key": "far_result_lens", "slide": 11, "shape_id": 20, "kind": "text", "required": false, "max_chars": 60},
+    {"key": "far_result_item", "slide": 11, "shape_id": 14, "kind": "text", "required": false, "max_chars": 120},
+    {"key": "far_result_view", "slide": 11, "shape_id": 17, "kind": "text", "required": false, "max_chars": 60},
+    {"key": "far_result_image", "slide": 11, "shape_id": 18, "kind": "image", "required": false, "aspect_ratio": "template_crop"},
+    {"key": "far_result_note", "slide": 11, "shape_id": 3, "kind": "text", "required": false, "max_chars": 200},
+    {"key": "far_result_caption", "slide": 11, "shape_id": 5, "kind": "text", "required": false, "max_chars": 80},
+
+    {"key": "inspection_items_title", "slide": 16, "shape_id": 23553, "kind": "text", "required": false, "max_chars": 50},
+    {"key": "inspection_items", "slide": 16, "shape_id": 12, "kind": "table", "required": false, "rows": 9, "columns": 5},
+    {"key": "inspection_accuracy_note", "slide": 16, "shape_id": 20, "kind": "text", "required": false, "max_chars": 260},
+    {"key": "inspection_items_caption", "slide": 16, "shape_id": 2, "kind": "text", "required": false, "max_chars": 50}
+  ]
+}
