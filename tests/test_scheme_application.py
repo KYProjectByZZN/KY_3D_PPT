@@ -1,16 +1,23 @@
 from __future__ import annotations
 
 import base64
+from copy import deepcopy
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
+from pptx import Presentation
+
 from ppt_generator.no_cad_scheme import NoCadSchemeService
 from ppt_generator.module_service import ensure_project_modules
 from ppt_generator.project import DeviceModule, PptProject, load_project, save_project
-from ppt_generator.scheme_application import import_no_cad_scene
-from ppt_generator.scheme_service import materialize_equipment_scheme
-from ppt_generator.template_renderer import load_manifest
+from ppt_generator.scheme_application import (
+    import_no_cad_scene,
+    sync_no_cad_scene_to_ppt,
+)
+from ppt_generator.scheme_service import SchemeError, materialize_equipment_scheme
+from ppt_generator.template_renderer import load_manifest, render_project
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +27,121 @@ PNG_1X1 = base64.b64decode(
 
 
 class SchemeApplicationTests(unittest.TestCase):
+    def test_project_identity_mismatch_rejects_sync_without_mutation(self) -> None:
+        service = NoCadSchemeService()
+        scene = service.create_minimum_scene()
+        scene.project_name = "其它项目"
+        project = PptProject(project_name="NAT6704")
+        manifest = load_manifest(
+            PROJECT_ROOT / "templates" / "NAT6704_v2.template.json"
+        )
+        ensure_project_modules(project, manifest)
+        before_scheme = deepcopy(project.equipment_scheme.to_dict())
+        before_modules = deepcopy([value.to_dict() for value in project.modules])
+
+        with self.assertRaisesRegex(SchemeError, "项目名称"):
+            sync_no_cad_scene_to_ppt(project, scene, manifest)
+
+        self.assertEqual(project.equipment_scheme.to_dict(), before_scheme)
+        self.assertEqual([value.to_dict() for value in project.modules], before_modules)
+
+    def test_missing_images_imports_formal_scheme_without_touching_ppt_modules(self) -> None:
+        service = NoCadSchemeService()
+        scene = service.create_minimum_scene()
+        project = PptProject(project_name=scene.project_name)
+        manifest = load_manifest(
+            PROJECT_ROOT / "templates" / "NAT6704_v2.template.json"
+        )
+        ensure_project_modules(project, manifest)
+        before_modules = deepcopy([value.to_dict() for value in project.modules])
+
+        synced = sync_no_cad_scene_to_ppt(project, scene, manifest)
+
+        self.assertIsNone(synced.materialization)
+        self.assertFalse(synced.ppt_updated)
+        self.assertIn("整机方案", synced.pending_image_names)
+        self.assertEqual(
+            len(project.equipment_scheme.equipment_modules),
+            len(scene.nodes),
+        )
+        self.assertEqual([value.to_dict() for value in project.modules], before_modules)
+
+    def test_all_confirmed_images_sync_formal_scheme_and_ppt_in_one_action(self) -> None:
+        service = NoCadSchemeService()
+        scene = service.create_minimum_scene()
+        project = PptProject(
+            project_name=scene.project_name,
+            template_path=str(
+                PROJECT_ROOT / "templates" / "冲压筒形壳体检测方案NAT6704_v2.pptx"
+            ),
+            manifest_path=str(
+                PROJECT_ROOT / "templates" / "NAT6704_v2.template.json"
+            ),
+            values=json.loads(
+                (
+                    PROJECT_ROOT / "examples" / "NAT6704_v2_test_data.json"
+                ).read_text(encoding="utf-8")
+            ),
+        )
+        manifest = load_manifest(
+            PROJECT_ROOT / "templates" / "NAT6704_v2.template.json"
+        )
+        ensure_project_modules(project, manifest)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            result = service.evaluate(scene)
+            overview = root / "overview.png"
+            overview.write_bytes(PNG_1X1)
+            service.bind_accepted_image(
+                scene,
+                "overview",
+                str(overview),
+                {"targetHash": result.visual_target("overview").target_hash},
+            )
+            expected: list[str] = []
+            for index, node in enumerate(scene.nodes, start=1):
+                image = root / f"module-{index}.png"
+                image.write_bytes(PNG_1X1)
+                expected.append(str(image.resolve()))
+                service.bind_accepted_image(
+                    scene,
+                    node.node_id,
+                    str(image),
+                    {"targetHash": result.visual_target(node.node_id).target_hash},
+                )
+
+            synced = sync_no_cad_scene_to_ppt(project, scene, manifest)
+            output = root / "project-visual-sync.pptx"
+            project.output_path = str(output)
+            render_project(project)
+            self.assertEqual(output.read_bytes()[:4], b"PK\x03\x04")
+            self.assertGreater(len(Presentation(output).slides), len(scene.nodes))
+
+        self.assertTrue(synced.ppt_updated)
+        self.assertIsNotNone(synced.materialization)
+        self.assertEqual(synced.pending_image_names, ())
+        overview_module = next(
+            value for value in project.modules
+            if value.template_module_key == "equipment_overview"
+        )
+        equipment_module = next(
+            value for value in project.modules
+            if value.template_module_key == "equipment_module"
+        )
+        self.assertEqual(
+            overview_module.slides[0].overrides["equipment_image"],
+            str(overview.resolve()),
+        )
+        actual = [
+            next(
+                value for key, value in slide.overrides.items()
+                if key.startswith("equipment_module_image_")
+            )
+            for slide in equipment_module.slides
+        ]
+        self.assertEqual(actual, expected)
+
     def test_imports_overview_and_each_module_with_prompt_structure_and_provenance(self) -> None:
         service = NoCadSchemeService()
         scene = service.create_minimum_scene()

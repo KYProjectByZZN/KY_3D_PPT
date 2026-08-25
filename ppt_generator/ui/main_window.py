@@ -79,7 +79,7 @@ from ..module_service import (
 )
 from ..no_cad_scheme import EquipmentScene
 from ..optical_far import apply_optical_far, parse_optical_far
-from ..scheme_application import import_no_cad_scene
+from ..scheme_application import sync_no_cad_scene_to_ppt
 from ..source_parser import parse_source
 from ..template_renderer import TemplateManifest, load_manifest, render_project
 from .dialogs import NavigationEditorDialog, TableValueDialog, TextValueDialog
@@ -388,6 +388,9 @@ class MainWindow(QMainWindow):
         self.project_name_edit = QLineEdit()
         self.project_name_edit.setPlaceholderText("例如：NAT6704 筒形壳体检测方案")
         self.project_name_edit.textChanged.connect(self._refresh_summary)
+        self.project_name_edit.editingFinished.connect(
+            self._sync_project_name_context
+        )
         project_form.addRow("项目名称", self.project_name_edit)
         left_layout.addWidget(project_group)
 
@@ -943,6 +946,7 @@ class MainWindow(QMainWindow):
             self.project.project_id,
             self.project.no_cad_scene,
             self.project.ai_image_batches,
+            project_name=self.project.project_name,
         )
         self._refresh_structure()
         self._refresh_field_table()
@@ -1089,6 +1093,8 @@ class MainWindow(QMainWindow):
 
     def _collect_ui_state(self) -> None:
         self.project.project_name = self.project_name_edit.text().strip() or "未命名技术方案"
+        if self.no_cad_scheme_editor.scene.project_name != self.project.project_name:
+            self.no_cad_scheme_editor.set_project_name(self.project.project_name)
         self.project.template_path = self.template_path_edit.text()
         self.project.manifest_path = self.manifest_path_edit.text()
         self.project.output_path = self.output_path_edit.text()
@@ -1103,6 +1109,11 @@ class MainWindow(QMainWindow):
                 no_cad_snapshot["aiImageBatches"]
             )
         sync_legacy_module_state(self.project)
+
+    def _sync_project_name_context(self) -> None:
+        name = self.project_name_edit.text().strip() or "未命名技术方案"
+        self.project.project_name = name
+        self.no_cad_scheme_editor.set_project_name(name)
 
     def new_project(self) -> None:
         if self._confirm_project_transition("新建项目"):
@@ -1395,13 +1406,24 @@ class MainWindow(QMainWindow):
             )
         self._on_modules_changed()
 
-    def _on_no_cad_scheme_committed(self, scene_data: object) -> None:
-        if not isinstance(scene_data, dict):
-            self._error("同步无CAD方案失败", "Scene 数据格式无效。")
+    def _on_no_cad_scheme_committed(self, payload: object) -> None:
+        if not isinstance(payload, dict) or not isinstance(payload.get("scene"), dict):
+            self._error("同步无CAD方案失败", "项目绑定的 Scene 数据格式无效。")
             return
         try:
-            scene = EquipmentScene.from_dict(scene_data)
-            result = import_no_cad_scene(self.project, scene)
+            self._collect_ui_state()
+            project_id = str(payload.get("projectId") or "")
+            project_name = str(payload.get("projectName") or "").strip()
+            if project_id != self.project.project_id:
+                raise ValueError("无CAD方案不属于当前项目，已拒绝同步")
+            if project_name != self.project.project_name:
+                raise ValueError("无CAD方案项目名称与当前项目不一致，已拒绝同步")
+            scene = EquipmentScene.from_dict(payload["scene"])
+            result = sync_no_cad_scene_to_ppt(
+                self.project,
+                scene,
+                self.manifest,
+            )
         except Exception as exc:
             self._error("同步无CAD方案失败", str(exc))
             return
@@ -1411,11 +1433,20 @@ class MainWindow(QMainWindow):
         self._refresh_summary()
         self.tabs.setCurrentIndex(1)
         self.module_workspace_tabs.setCurrentWidget(self.scheme_editor)
-        message = (
-            f"无CAD结构已同步到正式设备方案：{result.equipment_modules} 个模块，"
-            f"{result.image_targets} 个图片目标，尚缺 {result.pending_images} 张采用图。"
-        )
+        if result.ppt_updated:
+            self._on_scheme_materialized()
+            message = (
+                f"“{self.project.project_name}”已同步到PPT："
+                f"{result.imported.equipment_modules} 个设备模块，整机和模块确认图已自动配置。"
+            )
+        else:
+            missing = "、".join(result.pending_image_names)
+            message = (
+                f"“{self.project.project_name}”结构已进入正式设备方案；"
+                f"还需补充确认图：{missing}。补齐并编辑信息后再同步方案到PPT模块。"
+            )
         self._log(message)
+        self.statusBar().showMessage(message, 8000)
 
     def _on_no_cad_workspace_changed(self, payload: object) -> None:
         if not isinstance(payload, dict):

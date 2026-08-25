@@ -8,7 +8,12 @@ from pathlib import Path
 
 from .no_cad_scheme import EquipmentScene, MODULE_BY_TYPE, NoCadSchemeService
 from .project import AssetRecord, DeviceModule, FlowNode, PptProject
-from .scheme_service import SchemeError
+from .scheme_service import (
+    SchemeError,
+    SchemeMaterializationResult,
+    materialize_equipment_scheme,
+)
+from .template_renderer import TemplateManifest
 
 
 CATEGORY_TO_DEVICE_TYPE = {
@@ -38,6 +43,17 @@ class NoCadImportResult:
     pending_images: int
 
 
+@dataclass(frozen=True)
+class NoCadPptSyncResult:
+    imported: NoCadImportResult
+    materialization: SchemeMaterializationResult | None
+    pending_image_names: tuple[str, ...]
+
+    @property
+    def ppt_updated(self) -> bool:
+        return self.materialization is not None
+
+
 def _remember_asset(
     project: PptProject,
     path: str,
@@ -50,7 +66,7 @@ def _remember_asset(
         return
     resolved = str(Path(path).expanduser().resolve())
     metadata = {
-        "source": "no-cad-ai",
+        "source": str(provenance.get("source") or "no-cad-ai"),
         "targetId": target_id,
         "targetKind": target_kind,
         "provenance": deepcopy(provenance),
@@ -190,4 +206,57 @@ def import_no_cad_scene(
     )
 
 
-__all__ = ["NoCadImportResult", "import_no_cad_scene"]
+def sync_no_cad_scene_to_ppt(
+    project: PptProject,
+    scene: EquipmentScene,
+    manifest: TemplateManifest,
+) -> NoCadPptSyncResult:
+    """Import a project-owned Scene and materialize PPT modules only when complete."""
+    project_name = project.project_name.strip()
+    scene_name = scene.project_name.strip()
+    if not project_name or scene_name != project_name:
+        raise SchemeError(
+            f"无CAD方案项目名称“{scene_name or '未填写'}”与当前项目名称“{project_name or '未填写'}”不一致"
+        )
+
+    imported = import_no_cad_scene(project, scene)
+    project.no_cad_scene = scene.to_dict()
+    result = NoCadSchemeService().evaluate(scene)
+    pending: list[str] = []
+    for target in result.visual_targets:
+        path = Path(target.image_path).expanduser() if target.image_path else None
+        if path is None or not path.is_file():
+            pending.append("整机方案" if target.target_id == "overview" else target.title)
+
+    scene_module_ids = {node.node_id for node in scene.nodes}
+    for module in project.equipment_scheme.equipment_modules:
+        if (
+            module.enabled
+            and module.source_scene_node_id not in scene_module_ids
+            and (
+                not module.image_path
+                or not Path(module.image_path).expanduser().is_file()
+            )
+        ):
+            pending.append(module.name.strip() or "未命名手工模块")
+
+    pending_names = tuple(dict.fromkeys(pending))
+    if pending_names:
+        return NoCadPptSyncResult(
+            imported=imported,
+            materialization=None,
+            pending_image_names=pending_names,
+        )
+    return NoCadPptSyncResult(
+        imported=imported,
+        materialization=materialize_equipment_scheme(project, manifest),
+        pending_image_names=(),
+    )
+
+
+__all__ = [
+    "NoCadImportResult",
+    "NoCadPptSyncResult",
+    "import_no_cad_scene",
+    "sync_no_cad_scene_to_ppt",
+]

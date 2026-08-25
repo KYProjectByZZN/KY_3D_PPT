@@ -79,6 +79,8 @@ class NoCadSchemeEditor(QWidget):
         project_id: str,
         scene_data: Mapping[str, Any] | None = None,
         batch_records: list[Mapping[str, Any]] | None = None,
+        *,
+        project_name: str = "",
     ) -> None:
         """Replace the editor workspace with data owned by one PPT project."""
 
@@ -91,11 +93,22 @@ class NoCadSchemeEditor(QWidget):
             if scene_data
             else self.service.create_demo_scene()
         )
+        if project_name.strip():
+            self.scene.project_name = project_name.strip()
+        self.refresh()
+
+    def set_project_name(self, project_name: str) -> None:
+        """Keep the Scene display name aligned with its owning PPT project."""
+        normalized = project_name.strip() or "未命名技术方案"
+        if normalized == self.scene.project_name:
+            return
+        self.scene.project_name = normalized
         self.refresh()
 
     def workspace_snapshot(self) -> dict[str, Any]:
         return {
             "projectId": self.project_id,
+            "projectName": self.scene.project_name,
             "scene": self.scene.to_dict(),
             "aiImageBatches": deepcopy(self.candidate_batch_records),
         }
@@ -156,7 +169,7 @@ class NoCadSchemeEditor(QWidget):
         self.ai_generate_button.setEnabled(False)
         self.ai_generate_button.clicked.connect(self.generate_ai_effect)
         header_layout.addWidget(self.ai_generate_button)
-        self.commit_button = QPushButton("同步结构到正式设备方案")
+        self.commit_button = QPushButton("同步结构与图片到PPT")
         self.commit_button.setEnabled(False)
         self.commit_button.clicked.connect(self.commit_scheme)
         header_layout.addWidget(self.commit_button)
@@ -275,13 +288,14 @@ class NoCadSchemeEditor(QWidget):
         layout.addWidget(scene_title)
         form = QFormLayout()
         self.project_name_edit = QLineEdit()
+        self.project_name_edit.setReadOnly(True)
         self.product_name_edit = QLineEdit()
         self.node_name_edit = QLineEdit()
         self.station_id_edit = QLineEdit()
         self.description_edit = QLineEdit()
         self.reference_image_edit = QLineEdit()
         self.locked_check = QCheckBox("锁定位置与结构")
-        form.addRow("方案名称", self.project_name_edit)
+        form.addRow("所属项目", self.project_name_edit)
         form.addRow("产品名称", self.product_name_edit)
         form.addRow("模块名称", self.node_name_edit)
         form.addRow("工位编号", self.station_id_edit)
@@ -332,9 +346,16 @@ class NoCadSchemeEditor(QWidget):
         self.target_combo = QComboBox()
         self.target_combo.currentIndexChanged.connect(self._target_changed)
         form.addRow("结构编辑目标", self.target_combo)
+        image_row = QHBoxLayout()
         self.target_image_label = QLabel("尚未采用图片")
         self.target_image_label.setWordWrap(True)
-        form.addRow("目标图片", self.target_image_label)
+        image_row.addWidget(self.target_image_label, 1)
+        self.target_image_button = self._button(
+            "导入人工确认图",
+            self.choose_target_image,
+        )
+        image_row.addWidget(self.target_image_button)
+        form.addRow("目标图片", image_row)
         layout.addLayout(form)
 
         structure_label = QLabel("人工定义结构 JSON")
@@ -432,7 +453,6 @@ class NoCadSchemeEditor(QWidget):
         self.refresh(select_id=node_id)
 
     def apply_properties(self) -> None:
-        self.scene.project_name = self.project_name_edit.text().strip()
         self.scene.product_name = self.product_name_edit.text().strip()
         node = self._selected_node()
         if node is not None:
@@ -575,6 +595,7 @@ class NoCadSchemeEditor(QWidget):
             self.target_prompt_requirements_edit.clear()
             self.target_prompt_output.clear()
             self.target_image_label.setText("尚未选择生成目标")
+            self.target_image_button.setEnabled(False)
             return
         if target.target_kind == "overview":
             structure = self.scene.overview_structure
@@ -598,8 +619,54 @@ class NoCadSchemeEditor(QWidget):
         self.target_image_label.setText(
             target.image_path or "尚未采用图片"
         )
+        self.target_image_button.setEnabled(True)
         if self.current_result.can_generate_ai:
             self.ai_generate_button.setText("打开 Codex Pro AI效果图生成")
+
+    def choose_target_image(self) -> None:
+        target = self._current_target()
+        if target is None:
+            self._set_status("请先选择整机或设备模块目标。", error=True)
+            return
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            f"为“{target.title}”导入人工确认图",
+            target.image_path or str(Path.cwd()),
+            "图片文件 (*.png *.jpg *.jpeg *.bmp *.webp);;所有文件 (*)",
+        )
+        if not path:
+            return
+        image_path = Path(path).expanduser().resolve()
+        if not image_path.is_file():
+            self._set_status(f"人工确认图不存在：{image_path}", error=True)
+            return
+        provenance = {
+            "source": "manual-import",
+            "projectId": self.project_id,
+            "projectName": self.scene.project_name,
+            "targetId": target.target_id,
+            "targetKind": target.target_kind,
+            "targetHash": target.target_hash,
+            "humanConfirmed": True,
+        }
+        try:
+            self.service.bind_accepted_image(
+                self.scene,
+                target.target_id,
+                str(image_path),
+                provenance,
+            )
+        except ValueError as exc:
+            self._set_status(f"人工确认图绑定失败：{exc}", error=True)
+            return
+        self.refresh(
+            select_id=self._selected_node_id(),
+            target_id=target.target_id,
+        )
+        self._set_status(
+            f"“{target.title}”已绑定人工确认图，可继续配置其它目标或同步到PPT。",
+            error=False,
+        )
 
     def apply_target_definition(self) -> None:
         target = self._current_target()
@@ -653,9 +720,15 @@ class NoCadSchemeEditor(QWidget):
         if self.current_result is None or not self.current_result.can_generate_ai:
             self._set_status("当前设备方案未通过逻辑门禁，不能同步。", error=True)
             return
-        self.scheme_committed.emit(self.scene.to_dict())
+        self.scheme_committed.emit(
+            {
+                "projectId": self.project_id,
+                "projectName": self.scene.project_name,
+                "scene": self.scene.to_dict(),
+            }
+        )
         self._set_status(
-            "整机及各模块结构、提示词和已采用图片已提交到正式设备方案；尚未自动生成 PPT。",
+            "已提交当前项目的结构与确认图片；图片齐全时自动配置PPT，缺图时请在设备方案继续补充。",
             error=False,
         )
 

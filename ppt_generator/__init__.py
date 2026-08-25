@@ -90,7 +90,12 @@ from .scheme_service import (
     remove_device_module,
     remove_flow_node,
 )
-from .scheme_application import NoCadImportResult, import_no_cad_scene
+from .scheme_application import (
+    NoCadImportResult,
+    NoCadPptSyncResult,
+    import_no_cad_scene,
+    sync_no_cad_scene_to_ppt,
+)
 from .preview import (
     OfficePreviewSession,
     PreviewError,
@@ -154,6 +159,7 @@ __all__ = [
     "ModuleModel",
     "NavigationItem",
     "NoCadImportResult",
+    "NoCadPptSyncResult",
     "ParsedSource",
     "PageTemplateRef",
     "PptProject",
@@ -210,6 +216,7 @@ __all__ = [
     "save_project",
     "initialize_equipment_scheme",
     "import_no_cad_scene",
+    "sync_no_cad_scene_to_ppt",
     "remove_device_module",
     "remove_flow_node",
     "selection_range",
@@ -223,4 +230,4 @@ __all__ = [
     "render_project_page",
     "validate_pptx_package",
 ]
-__version__ = "0.9.7"
+__version__ = "0.9.8"

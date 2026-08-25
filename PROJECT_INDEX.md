@@ -4,7 +4,7 @@
 
 ## 当前基线
 
-- 版本：0.9.7
+- 版本：0.9.8
 - 产品：Windows 本地 PySide6 工业技术方案 PPT 工作台
 - 正式状态：`PptProject`；无 CAD 编辑状态：`EquipmentScene`
 - 输出：可编辑 `.pptx`；模板必须保持不变
@@ -21,7 +21,7 @@
 | 当前页预览 | `SPEC_CURRENT_PAGE_PREVIEW_MVP.md` | `preview.py`, `office_preview.py`, `ui/slide_preview.py` | `test_preview.py`, `test_ui.py` |
 | 顶部导航 | `SPEC_NAVIGATION_EDITOR_MVP.md` | `navigation_style.py`, `ui/dialogs.py` | `test_navigation_style.py`, `test_ui.py` |
 | Excel/FAR | `SPEC_EXCEL_MAPPING_WORKBENCH.md`, `SPEC_OPTICAL_FAR_TO_PPT.md` | `excel_mapper.py`, `optical_far.py` | `test_excel_mapper.py`, `test_optical_far.py` |
-| 正式设备方案 | `SPEC_EQUIPMENT_SCHEME_MVP.md` | `scheme_service.py`, `scheme_application.py`, `ui/scheme_editor.py` | `test_scheme_service.py`, `test_scheme_application.py` |
+| 正式设备方案/一键图片同步 | `SPEC_EQUIPMENT_SCHEME_MVP.md`, `SPEC_PROJECT_VISUAL_SYNC_V098.md` | `scheme_service.py`, `scheme_application.py`, `ui/scheme_editor.py` | `test_scheme_service.py`, `test_scheme_application.py`, `test_ui.py` |
 | 无 CAD 逻辑 | `SPEC_NO_CAD_LOGIC_SCHEME_MVP.md` | `no_cad_scheme.py`, `ui/no_cad_scheme_editor.py` | `test_no_cad_scheme.py`, `test_no_cad_scheme_ui.py` |
 | AI 候选图 | `SPEC_MODULE_VISUAL_BINDING.md`, `SPEC_PROJECT_AI_IMAGE_PERSISTENCE.md` | `codex_image.py`, `openai_image.py`, `ui/openai_image_dialog.py` | `test_codex_image.py`, `test_openai_image.py`, `test_ai_image_persistence.py` |
 | 自动方案 v2 | `SPEC_AUTO_SOLUTION_V2.md` | `auto_solution_application.py`, `solution_generation.py` | `test_auto_solution_v2.py` |

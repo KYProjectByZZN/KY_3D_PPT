@@ -13,6 +13,7 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QFileDialog
 
 from ppt_generator.no_cad_scheme import MODULE_BY_TYPE
 from ppt_generator.app_paths import project_ai_candidates_root
@@ -68,6 +69,40 @@ class NoCadSchemeUiTests(unittest.TestCase):
             self.widget.visual_overview_button.text(),
             "模块效果总览",
         )
+        self.assertEqual(
+            self.widget.commit_button.text(),
+            "同步结构与图片到PPT",
+        )
+
+    def test_project_name_is_authoritative_and_manual_image_binds_current_target(self) -> None:
+        project_id = "7" * 32
+        self.widget.set_project_context(
+            project_id,
+            project_name="NAT6704 筒形壳体检测技术方案",
+        )
+        self.assertTrue(self.widget.project_name_edit.isReadOnly())
+        self.assertEqual(
+            self.widget.scene.project_name,
+            "NAT6704 筒形壳体检测技术方案",
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            image = Path(temp_dir) / "manual-overview.png"
+            image.write_bytes(PNG_1X1)
+            with patch.object(
+                QFileDialog,
+                "getOpenFileName",
+                return_value=(str(image), "图片"),
+            ):
+                self.widget.target_combo.setCurrentIndex(0)
+                self.widget.choose_target_image()
+
+            self.assertEqual(self.widget.scene.overview_image, str(image.resolve()))
+            provenance = self.widget.scene.overview_image_provenance
+            self.assertEqual(provenance["source"], "manual-import")
+            self.assertEqual(provenance["projectId"], project_id)
+            self.assertEqual(provenance["projectName"], self.widget.scene.project_name)
+            self.assertEqual(provenance["targetId"], "overview")
+            self.assertTrue(provenance["humanConfirmed"])
 
     def test_visual_overview_has_one_card_per_target_and_tracks_added_module(self) -> None:
         dialog = ModuleVisualOverviewDialog(
@@ -505,7 +540,15 @@ class NoCadSchemeUiTests(unittest.TestCase):
         self.widget.scheme_committed.connect(committed.append)
         self.widget.commit_scheme()
         self.assertEqual(len(committed), 1)
-        self.assertEqual(committed[0]["nodes"][3]["nodeId"], node.node_id)
+        self.assertEqual(committed[0]["projectId"], self.widget.project_id)
+        self.assertEqual(
+            committed[0]["projectName"],
+            self.widget.scene.project_name,
+        )
+        self.assertEqual(
+            committed[0]["scene"]["nodes"][3]["nodeId"],
+            node.node_id,
+        )
 
     def test_acceptance_records_selected_module_target(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

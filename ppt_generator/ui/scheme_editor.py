@@ -102,8 +102,10 @@ class SchemeEditor(QWidget):
         self.overview_image_edit.setReadOnly(True)
         self.overview_image_edit.setPlaceholderText("选择工程师确认的整机设备方案图")
         image_row.addWidget(self.overview_image_edit, 1)
-        image_row.addWidget(self._button("选择图片", self.choose_overview_image))
+        image_row.addWidget(self._button("导入/替换图片", self.choose_overview_image))
         form.addRow("整机方案图", image_row)
+        self.overview_image_source_label = QLabel("未配置")
+        form.addRow("图片来源", self.overview_image_source_label)
         self.overview_description_edit = QPlainTextEdit()
         self.overview_description_edit.setPlaceholderText(
             "说明设备由哪些机构组成，以及各模块如何协同完成检测。"
@@ -121,7 +123,7 @@ class SchemeEditor(QWidget):
         form.addRow("整机提示词", self.overview_prompt_output)
         layout.addWidget(group)
         note = QLabel(
-            "整机图可以暂不填写；同步时不会覆盖当前模板图片。设备功能模块图必须填写，避免模板样图进入正式方案。"
+            "从无CAD页一键同步时整机和模块确认图都必须齐全；在本页可继续导入图片、自定义信息和页面版式。"
         )
         note.setWordWrap(True)
         note.setObjectName("mutedLabel")
@@ -256,7 +258,7 @@ class SchemeEditor(QWidget):
         self.device_table.itemSelectionChanged.connect(self._show_device)
         splitter.addWidget(self.device_table)
 
-        group = QGroupBox("设备功能模块属性")
+        group = QGroupBox("设备功能模块属性（可自定义编辑）")
         form = QFormLayout(group)
         self.device_name_edit = QLineEdit()
         self.device_name_edit.editingFinished.connect(self._save_device)
@@ -288,8 +290,10 @@ class SchemeEditor(QWidget):
         self.device_image_edit = QLineEdit()
         self.device_image_edit.setReadOnly(True)
         image_row.addWidget(self.device_image_edit, 1)
-        image_row.addWidget(self._button("选择图片", self.choose_device_image))
+        image_row.addWidget(self._button("导入/替换图片", self.choose_device_image))
         form.addRow("模块方案图", image_row)
+        self.device_image_source_label = QLabel("未配置")
+        form.addRow("图片来源", self.device_image_source_label)
         self.device_note_edit = QLineEdit()
         self.device_note_edit.editingFinished.connect(self._save_device)
         form.addRow("特别说明", self.device_note_edit)
@@ -311,6 +315,12 @@ class SchemeEditor(QWidget):
         self._guard = True
         try:
             self.overview_image_edit.setText(project.equipment_scheme.overview_image)
+            self.overview_image_source_label.setText(
+                self._image_source_text(
+                    project.equipment_scheme.overview_image,
+                    project.equipment_scheme.overview_image_provenance,
+                )
+            )
             self.overview_description_edit.setPlainText(
                 project.equipment_scheme.overview_description
             )
@@ -426,7 +436,11 @@ class SchemeEditor(QWidget):
         prompt_status = "已生成" if module.image_prompt.strip() else "待生成"
         if module.image_path:
             image_status = (
-                "已采用" if module.image_provenance else "已选择"
+                "人工确认"
+                if module.image_provenance.get("source") == "manual-import"
+                else "AI已采用"
+                if module.image_provenance
+                else "已选择"
             )
         else:
             image_status = "待添加"
@@ -443,6 +457,18 @@ class SchemeEditor(QWidget):
             ppt_status,
             links or "未关联",
         ]
+
+    @staticmethod
+    def _image_source_text(path: str, provenance: dict) -> str:
+        if not path:
+            return "未配置"
+        source = str(provenance.get("source") or "")
+        if source == "manual-import":
+            return "人工导入并确认"
+        provider = str(provenance.get("provider") or "")
+        if provenance:
+            return f"AI人工采用 · {provider}" if provider else "AI人工采用"
+        return "旧项目图片（来源未记录）"
 
     def _refresh_flow_module_combo(self, requested_id: str = "") -> None:
         if not self.project:
@@ -506,6 +532,7 @@ class SchemeEditor(QWidget):
                 self.device_structure_output,
                 self.device_prompt_output,
                 self.device_image_edit,
+                self.device_image_source_label,
                 self.device_note_edit,
                 self.device_template_combo,
                 self.device_enabled_check,
@@ -528,6 +555,9 @@ class SchemeEditor(QWidget):
             )
             self.device_prompt_output.setPlainText(module.image_prompt)
             self.device_image_edit.setText(module.image_path)
+            self.device_image_source_label.setText(
+                self._image_source_text(module.image_path, module.image_provenance)
+            )
             self.device_note_edit.setText(module.note)
             ppt_module = next(
                 (
@@ -735,7 +765,16 @@ class SchemeEditor(QWidget):
             return
         resolved = str(Path(path).resolve())
         self.project.equipment_scheme.overview_image = resolved
+        self.project.equipment_scheme.overview_image_provenance = {
+            "source": "manual-import",
+            "projectId": self.project.project_id,
+            "projectName": self.project.project_name,
+            "targetId": "overview",
+            "targetKind": "overview",
+            "humanConfirmed": True,
+        }
         self.overview_image_edit.setText(resolved)
+        self.overview_image_source_label.setText("人工导入并确认")
         self._remember_asset(resolved)
         self.changed.emit()
 
@@ -751,7 +790,16 @@ class SchemeEditor(QWidget):
         if not path:
             return
         module.image_path = str(Path(path).resolve())
+        module.image_provenance = {
+            "source": "manual-import",
+            "projectId": self.project.project_id,
+            "projectName": self.project.project_name,
+            "targetId": module.source_scene_node_id or module.id,
+            "targetKind": "module",
+            "humanConfirmed": True,
+        }
         self.device_image_edit.setText(module.image_path)
+        self.device_image_source_label.setText("人工导入并确认")
         self._remember_asset(module.image_path)
         self.refresh_device_table(module.id)
         self.changed.emit()

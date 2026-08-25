@@ -14,7 +14,7 @@ os.environ["KY_PPT_APP_DATA_ROOT"] = _UI_APP_DATA.name
 
 from PySide6.QtCore import QBuffer, QIODevice, Qt
 from PySide6.QtGui import QColor, QPainter, QPixmap
-from PySide6.QtWidgets import QMessageBox, QTableWidgetSelectionRange
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QTableWidgetSelectionRange
 from openpyxl import Workbook
 
 from ppt_generator import ExcelMappingRule, NavigationItem, __version__
@@ -497,7 +497,13 @@ class DesktopUiTests(unittest.TestCase):
     def test_no_cad_scene_syncs_through_main_window_application_handler(self) -> None:
         scene = self.window.no_cad_scheme_editor.scene
 
-        self.window._on_no_cad_scheme_committed(scene.to_dict())
+        self.window._on_no_cad_scheme_committed(
+            {
+                "projectId": self.window.project.project_id,
+                "projectName": self.window.project.project_name,
+                "scene": scene.to_dict(),
+            }
+        )
         self.application.processEvents()
 
         imported = [
@@ -534,6 +540,78 @@ class DesktopUiTests(unittest.TestCase):
             self.window.module_workspace_tabs.currentWidget(),
             self.window.scheme_editor,
         )
+
+    def test_no_cad_sync_rejects_another_project_id(self) -> None:
+        scene = self.window.no_cad_scheme_editor.scene
+        before = self.window.project.equipment_scheme.to_dict()
+        with patch.object(self.window, "_error") as show_error:
+            self.window._on_no_cad_scheme_committed(
+                {
+                    "projectId": "f" * 32,
+                    "projectName": self.window.project.project_name,
+                    "scene": scene.to_dict(),
+                }
+            )
+        show_error.assert_called_once()
+        self.assertIn("不属于当前项目", show_error.call_args.args[1])
+        self.assertEqual(self.window.project.equipment_scheme.to_dict(), before)
+
+    def test_no_cad_confirmed_images_sync_to_ppt_in_one_action(self) -> None:
+        editor = self.window.no_cad_scheme_editor
+        scene = editor.scene
+        result = editor.service.evaluate(scene)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            overview = root / "overview.png"
+            overview.write_bytes(PNG_1X1)
+            editor.service.bind_accepted_image(
+                scene,
+                "overview",
+                str(overview),
+                {"targetHash": result.visual_target("overview").target_hash},
+            )
+            expected: list[str] = []
+            for index, node in enumerate(scene.nodes, start=1):
+                image = root / f"module-{index}.png"
+                image.write_bytes(PNG_1X1)
+                expected.append(str(image.resolve()))
+                editor.service.bind_accepted_image(
+                    scene,
+                    node.node_id,
+                    str(image),
+                    {"targetHash": result.visual_target(node.node_id).target_hash},
+                )
+            editor.refresh()
+
+            self.window._on_no_cad_scheme_committed(
+                {
+                    "projectId": self.window.project.project_id,
+                    "projectName": self.window.project.project_name,
+                    "scene": scene.to_dict(),
+                }
+            )
+            self.window._preview_timer.stop()
+
+        overview_module = next(
+            value for value in self.window.project.modules
+            if value.template_module_key == "equipment_overview"
+        )
+        equipment_module = next(
+            value for value in self.window.project.modules
+            if value.template_module_key == "equipment_module"
+        )
+        self.assertEqual(
+            overview_module.slides[0].overrides["equipment_image"],
+            str(overview.resolve()),
+        )
+        actual = [
+            next(
+                value for key, value in slide.overrides.items()
+                if key.startswith("equipment_module_image_")
+            )
+            for slide in equipment_module.slides
+        ]
+        self.assertEqual(actual, expected)
 
     def test_candidate_history_change_auto_saves_existing_project(self) -> None:
         target = self.window.no_cad_scheme_editor.current_result.visual_target(
@@ -580,6 +658,35 @@ class DesktopUiTests(unittest.TestCase):
         self.assertEqual(module.structure_definition, {})
         self.assertEqual(module.image_prompt, "")
         self.assertEqual(module.image_path, "")
+
+    def test_formal_device_manual_image_is_project_bound_and_editable(self) -> None:
+        editor = self.window.scheme_editor
+        editor.add_device()
+        module = self.window.project.equipment_scheme.equipment_modules[0]
+        with tempfile.TemporaryDirectory() as temp_dir:
+            image = Path(temp_dir) / "manual-module.png"
+            image.write_bytes(PNG_1X1)
+            with patch.object(
+                QFileDialog,
+                "getOpenFileName",
+                return_value=(str(image), "图片"),
+            ):
+                editor.choose_device_image()
+
+            editor.device_name_edit.setText("人工自定义检测模块")
+            editor.device_function_edit.setPlainText("检测产品外观缺陷")
+            editor.device_note_edit.setText("工程师确认图")
+            editor._save_device()
+
+        self.assertEqual(module.name, "人工自定义检测模块")
+        self.assertEqual(module.function, "检测产品外观缺陷")
+        self.assertEqual(module.note, "工程师确认图")
+        self.assertEqual(module.image_provenance["source"], "manual-import")
+        self.assertEqual(
+            module.image_provenance["projectId"],
+            self.window.project.project_id,
+        )
+        self.assertEqual(editor.device_table.item(0, 5).text(), "人工确认")
 
 
 if __name__ == "__main__":
