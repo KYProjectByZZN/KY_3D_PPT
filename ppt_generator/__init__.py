@@ -223,4 +223,4 @@ __all__ = [
     "render_project_page",
     "validate_pptx_package",
 ]
-__version__ = "0.9.6"
+__version__ = "0.9.7"

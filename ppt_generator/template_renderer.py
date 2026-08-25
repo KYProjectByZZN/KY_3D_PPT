@@ -18,6 +18,7 @@ from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.opc.constants import RELATIONSHIP_TYPE as RT
 
+from .io_utils import commit_staged_output, staged_output_path
 from .module_service import (
     ensure_project_modules,
     rebuild_structure_context,
@@ -648,11 +649,12 @@ def render_template(
             _replace_image(slide, shape, value, slot, data_directory=data_file.parent)
 
     _apply_slide_plan(presentation, slide_plan)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    presentation.save(destination)
-    validate_pptx_package(destination, expected_slides=len(slide_plan))
-    if sha256_file(template_file) != source_hash:
-        raise TemplateRenderError("原模板在生成过程中发生了变化")
+    with staged_output_path(destination) as staged:
+        presentation.save(staged)
+        validate_pptx_package(staged, expected_slides=len(slide_plan))
+        if sha256_file(template_file) != source_hash:
+            raise TemplateRenderError("原模板在生成过程中发生了变化")
+        commit_staged_output(staged, destination)
     return destination
 
 
@@ -729,15 +731,16 @@ def render_project(
             for context in contexts
         ],
     )
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    presentation.save(destination)
-    _remove_unreferenced_slide_parts(destination)
-    validate_pptx_package(destination, expected_slides=len(contexts))
-    reopened = Presentation(destination)
-    if len(reopened.slides) != len(contexts):
-        raise TemplateRenderError("生成后的 PPTX 重开页数不一致")
-    if sha256_file(template_file) != source_hash:
-        raise TemplateRenderError("原模板在生成过程中发生了变化")
+    with staged_output_path(destination) as staged:
+        presentation.save(staged)
+        _remove_unreferenced_slide_parts(staged)
+        validate_pptx_package(staged, expected_slides=len(contexts))
+        reopened = Presentation(staged)
+        if len(reopened.slides) != len(contexts):
+            raise TemplateRenderError("生成后的 PPTX 重开页数不一致")
+        if sha256_file(template_file) != source_hash:
+            raise TemplateRenderError("原模板在生成过程中发生了变化")
+        commit_staged_output(staged, destination)
     return destination
 
 
@@ -895,12 +898,13 @@ def render_project_page(
             )
         ],
     )
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    presentation.save(destination)
-    _remove_unreferenced_slide_parts(destination)
-    validate_pptx_package(destination, expected_slides=1)
-    if len(Presentation(destination).slides) != 1:
-        raise TemplateRenderError("单页预览 PPTX 重开页数不一致")
-    if sha256_file(template_file) != source_hash:
-        raise TemplateRenderError("原模板在生成过程中发生了变化")
+    with staged_output_path(destination) as staged:
+        presentation.save(staged)
+        _remove_unreferenced_slide_parts(staged)
+        validate_pptx_package(staged, expected_slides=1)
+        if len(Presentation(staged).slides) != 1:
+            raise TemplateRenderError("单页预览 PPTX 重开页数不一致")
+        if sha256_file(template_file) != source_hash:
+            raise TemplateRenderError("原模板在生成过程中发生了变化")
+        commit_staged_output(staged, destination)
     return destination

@@ -92,6 +92,29 @@ class ProjectAndSourceTests(unittest.TestCase):
             self.assertEqual(raw["schema_version"], 5)
             self.assertFalse(path.with_suffix(path.suffix + ".tmp").exists())
 
+    def test_project_save_keeps_three_rotating_backups(self) -> None:
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as temp_dir:
+            path = Path(temp_dir) / "backup.kyppt.json"
+            project = PptProject(project_name="V0")
+            save_project(project, path)
+            for version in range(1, 5):
+                project.project_name = f"V{version}"
+                save_project(project, path)
+
+            self.assertEqual(load_project(path).project_name, "V4")
+            self.assertEqual(
+                load_project(path.with_suffix(path.suffix + ".bak1")).project_name,
+                "V3",
+            )
+            self.assertEqual(
+                load_project(path.with_suffix(path.suffix + ".bak2")).project_name,
+                "V2",
+            )
+            self.assertEqual(
+                load_project(path.with_suffix(path.suffix + ".bak3")).project_name,
+                "V1",
+            )
+
     def test_legacy_project_gets_stable_id_when_saved_as_schema_v5(self) -> None:
         restored = PptProject.from_dict(
             {

@@ -1,0 +1,8 @@
+# Direct dependency versions used by the v0.9.7 quality gate on Windows.
+# Use requirements.txt for supported ranges; use this file to reproduce the tested baseline.
+python-pptx==1.0.2
+PySide6==6.11.2
+openpyxl==3.1.5
+python-docx==1.2.0
+openai==2.54.0
+pywin32==311; platform_system == "Windows"

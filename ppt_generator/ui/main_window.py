@@ -47,6 +47,8 @@ from PySide6.QtWidgets import (
 )
 
 from .. import __version__
+from ..app_paths import preview_cache_root, project_far_assets_root
+from ..logging_setup import configure_application_logging
 from ..excel_mapper import (
     ExcelMappingRule,
     ExcelWorkbookPreview,
@@ -60,6 +62,7 @@ from ..excel_mapper import (
     suggest_text_mappings,
 )
 from ..project import AssetRecord, PptProject, SourceRecord, load_project, save_project
+from ..project_session import ProjectStateTracker
 from ..preview import (
     OfficePreviewSession,
     ensure_template_thumbnail,
@@ -94,8 +97,7 @@ DEFAULT_TEMPLATE = PROJECT_ROOT / "templates" / "冲压筒形壳体检测方案N
 DEFAULT_MANIFEST = PROJECT_ROOT / "templates" / "NAT6704_v2.template.json"
 DEFAULT_DATA = PROJECT_ROOT / "examples" / "NAT6704_v2_test_data.json"
 DEFAULT_OUTPUT = PROJECT_ROOT / "output" / "NAT6704_v2_界面生成测试.pptx"
-PREVIEW_CACHE_ROOT = PROJECT_ROOT / "output" / ".preview_cache"
-FAR_ASSET_ROOT = PROJECT_ROOT / "output" / "far_assets"
+PREVIEW_CACHE_ROOT = preview_cache_root()
 
 ASSET_CATEGORIES = ["未分类", "公司图", "产品图", "设备图", "技术方案图", "检测效果图", "资质图", "其他"]
 KIND_NAMES = {"text": "文字", "table": "表格", "image": "图片"}
@@ -268,6 +270,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.project = PptProject()
+        self._project_state = ProjectStateTracker()
+        self._logger = configure_application_logging()
         self.manifest: TemplateManifest | None = None
         self.excel_preview: ExcelWorkbookPreview | None = None
         self._project_file: Path | None = None
@@ -903,6 +907,7 @@ class MainWindow(QMainWindow):
         )
         self._project_file = None
         self._load_manifest_into_ui(reset_modules=True)
+        self._project_state.mark_clean(self.project)
         self._log("已加载 NAT6704 默认模板和 M2 测试数据。")
 
     def _load_manifest_into_ui(self, *, reset_modules: bool) -> None:
@@ -1100,12 +1105,7 @@ class MainWindow(QMainWindow):
         sync_legacy_module_state(self.project)
 
     def new_project(self) -> None:
-        answer = QMessageBox.question(
-            self,
-            "新建项目",
-            "将重新加载默认模板和测试数据。未保存的修改会丢失，是否继续？",
-        )
-        if answer == QMessageBox.StandardButton.Yes:
+        if self._confirm_project_transition("新建项目"):
             self._load_default_project()
 
     def open_project(self) -> None:
@@ -1117,6 +1117,8 @@ class MainWindow(QMainWindow):
         )
         if not path:
             return
+        if not self._confirm_project_transition("打开其他项目"):
+            return
         try:
             project = load_project(path)
             if not Path(project.template_path).is_file() or not Path(project.manifest_path).is_file():
@@ -1124,12 +1126,13 @@ class MainWindow(QMainWindow):
             self.project = project
             self._project_file = Path(path)
             self._load_manifest_into_ui(reset_modules=False)
+            self._project_state.mark_clean(self.project)
             self._log(f"已打开项目：{path}")
             self.statusBar().showMessage("项目已打开", 4000)
         except Exception as exc:
             self._error("打开项目失败", str(exc))
 
-    def save_project(self) -> None:
+    def save_project(self) -> bool:
         self._collect_ui_state()
         path = str(self._project_file) if self._project_file else ""
         if not path:
@@ -1140,13 +1143,34 @@ class MainWindow(QMainWindow):
                 "KY PPT 项目 (*.kyppt.json);;JSON (*.json)",
             )
         if not path:
-            return
+            return False
         try:
             self._project_file = save_project(self.project, path)
+            self._project_state.mark_clean(self.project)
             self._log(f"项目已保存：{self._project_file}")
             self.statusBar().showMessage("项目已保存", 4000)
+            return True
         except Exception as exc:
             self._error("保存项目失败", str(exc))
+            return False
+
+    def _confirm_project_transition(self, action: str) -> bool:
+        """Protect the current session before replacing or closing it."""
+        self._collect_ui_state()
+        if not self._project_state.is_dirty(self.project):
+            return True
+        answer = QMessageBox.warning(
+            self,
+            "项目尚未保存",
+            f"当前项目有未保存的修改。是否先保存，再{action}？",
+            QMessageBox.StandardButton.Save
+            | QMessageBox.StandardButton.Discard
+            | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Save,
+        )
+        if answer == QMessageBox.StandardButton.Save:
+            return self.save_project()
+        return answer == QMessageBox.StandardButton.Discard
 
     def choose_template(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -1414,6 +1438,7 @@ class MainWindow(QMainWindow):
         try:
             self._collect_ui_state()
             save_project(self.project, self._project_file)
+            self._project_state.mark_clean(self.project)
             self._log(f"候选图批次已自动写入项目：{self._project_file}")
             self.statusBar().showMessage("候选图批次已自动保存", 5000)
         except Exception as exc:
@@ -2046,7 +2071,7 @@ class MainWindow(QMainWindow):
                 self.project,
                 self.manifest,
                 data,
-                FAR_ASSET_ROOT,
+                project_far_assets_root(self.project.project_id),
             )
             self._preview_timer.stop()
             self._preview_cache.clear()
@@ -2426,15 +2451,20 @@ class MainWindow(QMainWindow):
     # ----- helpers ---------------------------------------------------------
 
     def _log(self, message: str) -> None:
+        self._logger.info(message)
         self.log_view.appendPlainText(message)
 
     def _error(self, title: str, message: str) -> None:
+        self._logger.error("%s：%s", title, message)
         self.statusBar().showMessage(title, 5000)
         QMessageBox.critical(self, title, message)
 
     def closeEvent(self, event) -> None:
         if self._worker and self._worker.isRunning():
             QMessageBox.warning(self, "正在生成", "请等待 PPT 生成完成后再关闭软件。")
+            event.ignore()
+            return
+        if not self._confirm_project_transition("退出软件"):
             event.ignore()
             return
         self._preview_timer.stop()

@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
+import tempfile
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -615,12 +617,34 @@ class PptProject:
 def save_project(project: PptProject, path: str | Path) -> Path:
     destination = Path(path).expanduser().resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary = destination.with_suffix(destination.suffix + ".tmp")
-    temporary.write_text(
-        json.dumps(project.to_dict(), ensure_ascii=False, indent=2),
-        encoding="utf-8",
+    content = json.dumps(project.to_dict(), ensure_ascii=False, indent=2).encode("utf-8")
+    if destination.is_file() and destination.read_bytes() == content:
+        return destination
+
+    handle, temporary_name = tempfile.mkstemp(
+        prefix=f".{destination.name}.", suffix=".tmp", dir=destination.parent
     )
-    os.replace(temporary, destination)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(handle, "wb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        if destination.is_file():
+            oldest = destination.with_suffix(destination.suffix + ".bak3")
+            oldest.unlink(missing_ok=True)
+            for number in range(2, 0, -1):
+                source = destination.with_suffix(destination.suffix + f".bak{number}")
+                target = destination.with_suffix(destination.suffix + f".bak{number + 1}")
+                if source.is_file():
+                    os.replace(source, target)
+            shutil.copy2(
+                destination,
+                destination.with_suffix(destination.suffix + ".bak1"),
+            )
+        os.replace(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
     return destination
 
 

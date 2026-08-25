@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..app_paths import project_ai_candidates_root
 from ..no_cad_scheme import (
     CATEGORY_NAMES,
     MODULE_BY_TYPE,
@@ -46,7 +47,7 @@ from ..no_cad_scheme import (
 )
 from ..openai_image import ImageProvider
 from .module_visual_overview import ModuleVisualOverviewDialog
-from .openai_image_dialog import DEFAULT_AI_OUTPUT_ROOT, OpenAIImageDialog
+from .openai_image_dialog import OpenAIImageDialog
 
 
 class NoCadSchemeEditor(QWidget):
@@ -788,7 +789,7 @@ class NoCadSchemeEditor(QWidget):
             target=target,
             provider=self.image_provider,
             api_key=self._openai_api_key,
-            output_root=DEFAULT_AI_OUTPUT_ROOT / (self.project_id or "_unbound"),
+            output_root=project_ai_candidates_root(self.project_id),
             project_id=self.project_id,
             batch_history=self.candidate_batch_records,
             parent=self,

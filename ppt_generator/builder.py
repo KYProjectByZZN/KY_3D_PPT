@@ -9,6 +9,8 @@ from pptx import Presentation
 from pptx.enum.text import PP_ALIGN
 from pptx.util import Inches, Pt
 
+from .io_utils import commit_staged_output, staged_output_path
+
 
 DEFAULT_FONT = "Microsoft YaHei"
 
@@ -69,5 +71,10 @@ def build_presentation(
             _set_text_style(paragraph, size=20)
 
     destination.parent.mkdir(parents=True, exist_ok=True)
-    presentation.save(destination)
+    with staged_output_path(destination) as staged:
+        presentation.save(staged)
+        from .template_renderer import validate_pptx_package
+
+        validate_pptx_package(staged, expected_slides=len(presentation.slides))
+        commit_staged_output(staged, destination)
     return destination

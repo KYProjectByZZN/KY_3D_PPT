@@ -10,6 +10,11 @@ from pathlib import Path
 from typing import Callable, Sequence
 from uuid import uuid4
 
+from .app_paths import (
+    PROJECT_ROOT,
+    auto_solution_store_path,
+    copy_legacy_file_if_missing,
+)
 from .auto_solution_repository import JsonAutoSolutionRepository
 from .requirement_management import (
     RequirementRecord,
@@ -38,9 +43,13 @@ def current_time_iso() -> str:
 def default_auto_solution_store_path() -> Path:
     configured = os.environ.get("KY_PPT_AUTO_SOLUTION_STORE", "").strip()
     if configured:
-        return Path(configured)
-    project_root = Path(__file__).resolve().parents[1]
-    return project_root / "output" / "auto_solution_v2_store.json"
+        return Path(configured).expanduser().resolve()
+    destination = auto_solution_store_path()
+    copy_legacy_file_if_missing(
+        PROJECT_ROOT / "output" / "auto_solution_v2_store.json",
+        destination,
+    )
+    return destination
 
 
 @dataclass(frozen=True)

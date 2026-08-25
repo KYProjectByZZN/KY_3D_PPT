@@ -2,7 +2,7 @@
 
 一个本地、轻量、可扩展的 PowerPoint 生成项目。
 
-当前版本：0.9.6。已经提供 PySide6 桌面工作台、结构化模块/页面编辑、设备流程与实体设备模块设计、Excel 动态扩页、光学 FAR 一键生成检测效果、当前页只读预览、项目级可编辑顶部导航、独立的自动方案 v2，以及“无CAD方案实验室”。实验室把一个方案拆成“整机 + 各功能模块”视觉目标，每个目标独立绑定人工结构、确定性提示词、控制图、采用图片和来源记录；模块增删或排序时，这套绑定与PPT页面按同一模块ID联动，过期采用图会自动失效。“模块效果总览”使用大尺寸工业分区卡片一次审核整机和各模块；“AI设备方案效果图”窗口内可直接选择整机或模块、预览已有采用图和候选图并打开大图查看。候选图现按项目ID隔离保存，Scene、批次历史和采用来源随项目恢复；已保存项目的新批次会自动写入项目文件。默认通过本机 Codex 的 ChatGPT 登录生成候选图，OpenAI图片API仅作为单独计费备用路径。
+当前版本：0.9.7。已经提供 PySide6 桌面工作台、结构化模块/页面编辑、设备流程与实体设备模块设计、Excel 动态扩页、光学 FAR 一键生成检测效果、当前页只读预览、项目级可编辑顶部导航、独立的自动方案 v2，以及“无CAD方案实验室”。实验室把一个方案拆成“整机 + 各功能模块”视觉目标，每个目标独立绑定人工结构、确定性提示词、控制图、采用图片和来源记录；模块增删或排序时，这套绑定与PPT页面按同一模块ID联动，过期采用图会自动失效。“模块效果总览”使用大尺寸工业分区卡片一次审核整机和各模块；“AI设备方案效果图”窗口内可直接选择整机或模块、预览已有采用图和候选图并打开大图查看。候选图按项目ID隔离保存，Scene、批次历史和采用来源随项目恢复；已保存项目的新批次会自动写入项目文件。默认通过本机 Codex 的 ChatGPT 登录生成候选图，OpenAI图片API仅作为单独计费备用路径。
 
 ## 目录
 
@@ -12,7 +12,8 @@ PPT_Generator/
 ├─ templates/           PPTX模板及人工Slot配置
 ├─ examples/            示例渲染数据
 ├─ assets/              图片、Logo等素材
-├─ output/              生成结果，不纳入Git
+├─ output/              人工导出结果，不纳入Git
+├─ projects/            可选项目导出目录，不纳入Git
 ├─ tests/               自动化测试
 ├─ generate_ppt.py      基础命令行入口
 ├─ render_template.py   模板渲染命令行入口
@@ -28,6 +29,8 @@ PPT_Generator/
 ```powershell
 python -m pip install -r requirements.txt
 ```
+
+需要复现本次 Windows 验证环境时，使用 `python -m pip install -r requirements-tested.txt`；它固定 v0.9.7 质量门实际使用的直接依赖版本。
 
 ## 生成示例
 
@@ -70,7 +73,7 @@ python run_desktop.py
 - 无CAD方案实验室：默认进入逻辑方案编辑器，使用16种内置上料、输送、定位、检测、分选和下料模块组成单条主线；支持模块添加/替换/删除/拖动排序/锁定、参考图登记、自动排布和逻辑门禁。整机与每个模块都是独立视觉目标，可分别编辑结构JSON与补充要求、查看最终提示词、生成并采用图片；完成后通过Application服务单向同步到正式设备方案。内部第二页保留DrawingSpecification提示词/SVG实验。
 - 模块效果总览：在无CAD方案顶部打开大尺寸审核窗口，按当前模块顺序显示整机和全部模块；缺图保持独立占位，已采用图可点击打开原始分辨率并进行适应窗口、100%、放大和缩小查看。
 
-自动方案 v2 当前默认把正式用户记录保存到 `output/auto_solution_v2_store.json`。内置三条历史摘要明确标记为“演示数据”，只用于验证首版检索链路，不代表公司真实项目；未配置在线 AI 和图像 Provider 时，软件不会伪装成已经调用 API。
+自动方案 v2、项目候选图、FAR 素材、预览缓存和日志默认保存在 `%LOCALAPPDATA%\KY_Project\PPT_Generator`，不与源码或导出文件混放。旧版 `output/auto_solution_v2_store.json` 首次迁移时只复制、不删除。内置三条历史摘要明确标记为“演示数据”，只用于验证首版检索链路，不代表公司真实项目；未配置在线 AI 和图像 Provider 时，软件不会伪装成已经调用 API。
 
 无CAD方案实验室与自动方案 v2 的需求/候选仓库暂不联动，也不回写 `CandidateSolution`。无CAD Scene 通过门禁后可以由用户显式同步到 `PptProject.equipment_scheme`，同步内容包括整机/模块结构、提示词、图片和来源记录；同步结构本身不生成PPT。内置模块只是功能核验目录，后续需用公司真实模块和规则逐项替换。
 
@@ -137,7 +140,5 @@ python render_template.py `
 ## 验证
 
 ```powershell
-$env:QT_QPA_PLATFORM='offscreen'
-python -m unittest discover -s tests -v
-python -m py_compile generate_ppt.py render_template.py run_desktop.py ppt_generator\codex_image.py ppt_generator\openai_image.py ppt_generator\builder.py ppt_generator\excel_mapper.py ppt_generator\module_service.py ppt_generator\office_preview.py ppt_generator\office_preview_server.py ppt_generator\optical_far.py ppt_generator\preview.py ppt_generator\project.py ppt_generator\scheme_service.py ppt_generator\source_parser.py ppt_generator\template_renderer.py ppt_generator\ui\app.py ppt_generator\ui\openai_image_dialog.py ppt_generator\ui\dialogs.py ppt_generator\ui\main_window.py ppt_generator\ui\module_editor.py ppt_generator\ui\scheme_editor.py ppt_generator\ui\slide_preview.py
+powershell -ExecutionPolicy Bypass -File .\tools\quality_gate.ps1
 ```

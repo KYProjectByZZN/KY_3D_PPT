@@ -564,3 +564,14 @@
 - 保存联动：新批次立即进入无CAD工作区索引；已保存项目自动原子更新项目文件，未首次保存的新项目提示点击“保存项目”。重新打开项目后恢复Scene、已采用图和候选历史。
 - 安全边界：不自动猜测旧版未绑定候选图的归属，不删除旧输出；结构哈希变化后旧批次仍保留追溯，但不进入当前可采用列表。
 - 规格与验证：新增`SPEC_PROJECT_AI_IMAGE_PERSISTENCE.md`；覆盖schema迁移、项目异主拒绝、原子保存、目标历史过滤/预览、编辑器事件与已有项目自动保存测试；本项目`tests/`下110项pytest和unittest全部通过，全量Python编译检查通过。
+
+### 2026-08-25｜建立 0.9.7 仓库与稳定性基线
+
+- Git 基线：在用户新建的公开仓库 `KYProjectByZZN/KY_3D_PPT` 建立 `main` 分支；先提交并推送可回退的0.9.6基线。PPTX/XLSX由Git LFS管理，`output/`、用户项目、研究仓库、缓存、日志和`.codegraph/`不进入Git。
+- 规格与文件边界：新增`SPEC_STABILITY_BASELINE_V097.md`和`app_paths.py`。自动方案库、项目级AI候选图、FAR素材、预览缓存与日志默认写入`%LOCALAPPDATA%\KY_Project\PPT_Generator`；旧自动方案库只复制、不删除，旧项目素材绝对路径继续兼容。
+- 保存保护：项目JSON改为唯一同目录临时文件、刷盘和原子替换，内容变化时保留`.bak1`至`.bak3`；桌面端在新建、打开、退出前检查未保存状态，支持保存、放弃或取消。
+- PPT安全：基础Builder、模板渲染、整项目渲染和单页预览统一先写同目录暂存PPTX；只有ZIP结构、页数、重开和模板哈希检查通过后才原子替换正式输出。模拟校验失败已验证旧输出字节不变、暂存文件被清理。
+- 可维护性：新增轮转`app.log`、统一`tools/quality_gate.ps1`、`PROJECT_INDEX.md`任务路由和精简后的`README-AI.md`；默认AI接手不再通读566行历史日志和全部Spec。新增`requirements-tested.txt`记录本次通过质量门的直接依赖版本。
+- CodeGraph：安装1.5.0、关闭遥测并初始化本项目受控索引；共83个文件、2,159个节点、6,301条关系，索引8.36MB且不提交Git。
+- 验证：根目录`pytest`只收集本项目测试；pytest 116项、unittest 116项和全量compileall通过。真实NAT6704模板生成34,870,954字节PPTX，Office ZIP校验通过，模板生成前后SHA-256均为`795ACCABC0BB6B6EFC619E585A17A2BCA8E03C8B418CE5F8223DF1962A058CDF`。
+- 未完成边界：本机未安装WPS，因此不声明WPS人工兼容验收完成；本版本也未批量迁移旧项目绝对路径或拆分全部MainWindow历史代码。

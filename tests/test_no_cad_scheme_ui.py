@@ -15,6 +15,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtCore import Qt
 
 from ppt_generator.no_cad_scheme import MODULE_BY_TYPE
+from ppt_generator.app_paths import project_ai_candidates_root
 from ppt_generator.ui.app import create_application
 from ppt_generator.ui.module_visual_overview import (
     ImagePreviewDialog,
@@ -444,7 +445,7 @@ class NoCadSchemeUiTests(unittest.TestCase):
             self.assertIn("已回写 2 个效果图目标", self.widget.status_label.text())
             kwargs = dialog_class.call_args.kwargs
             self.assertEqual(kwargs["project_id"], project_id)
-            self.assertEqual(kwargs["output_root"].name, project_id)
+            self.assertEqual(kwargs["output_root"], project_ai_candidates_root(project_id))
             self.assertEqual(kwargs["batch_history"], [])
 
     @patch("ppt_generator.ui.no_cad_scheme_editor.OpenAIImageDialog")

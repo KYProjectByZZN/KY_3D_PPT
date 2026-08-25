@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..app_paths import project_ai_candidates_root
 from ..codex_image import CodexImageProvider
 from ..no_cad_scheme import (
     EquipmentScene,
@@ -49,8 +50,7 @@ from ..openai_image import (
 from .module_visual_overview import ImagePreviewDialog
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_AI_OUTPUT_ROOT = PROJECT_ROOT / "output" / "ai_candidates"
+DEFAULT_AI_OUTPUT_ROOT = project_ai_candidates_root("_unbound")
 
 
 class OpenAIConnectionWorker(QThread):

@@ -103,7 +103,7 @@ ppt_generator/
 
 任何阶段没有通过验收，不提前进入下一阶段。
 
-## 7. AI 图片接入与模块绑定（0.9.6）
+## 7. AI 图片接入与模块绑定（0.9.7）
 
 - 默认采用本机 Codex 运行时和 ChatGPT 登录，使用用户已有的 Codex 会员套餐额度，不把 ChatGPT 会员误当成 API Key，也不要求 API 充值。
 - Codex Provider 与原 OpenAI API Provider 通过同一 `ImageProvider` 边界接入；API 路径仅作为用户主动选择的单独计费备用模式。
@@ -116,4 +116,4 @@ ppt_generator/
 - 用户显式点击同步后，由`scheme_application`把整机及模块的结构、提示词、图片和来源记录单向导入正式设备方案；不会自动生成PPT。正式设备方案仍通过既有人工同步按钮写入设备总览和设备模块Slot。
 - 无CAD编辑器提供独立大尺寸“模块效果总览”；按当前视觉目标顺序显示整机和每个模块的采用图，卡片只加载缩略图，点击后才加载原图并支持缩放。该界面只读，不保存第二份模块状态，也不合成PPT图片。
 - 整机/模块生成目标在“AI设备方案效果图”窗口内选择；切换目标同步更新提示词和已有采用图，并清空上一目标候选。一个窗口可依次采用多个目标，关闭后按目标ID/哈希统一回写，外层结构编辑选择只作为初始定位。
-- `PptProject` schema v5 保存稳定项目ID、无CAD Scene和AI候选批次索引；候选文件位于 `output/ai_candidates/<projectId>/<targetHash>/<batchId>/`，不同项目不共用历史。AI窗口仅显示项目ID、目标ID和目标哈希均匹配的批次；已保存项目生成新批次后自动原子更新项目文件。
+- `PptProject` schema v5 保存稳定项目ID、无CAD Scene和AI候选批次索引；候选文件位于 `%LOCALAPPDATA%\KY_Project\PPT_Generator\data\projects\<projectId>\ai_candidates\...`，不同项目不共用历史。AI窗口仅显示项目ID、目标ID和目标哈希均匹配的批次；已保存项目生成新批次后自动原子更新项目文件。

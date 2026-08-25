@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import logging
 import os
 import tempfile
 import unittest
@@ -8,13 +9,16 @@ from pathlib import Path
 from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+_UI_APP_DATA = tempfile.TemporaryDirectory()
+os.environ["KY_PPT_APP_DATA_ROOT"] = _UI_APP_DATA.name
 
 from PySide6.QtCore import QBuffer, QIODevice, Qt
 from PySide6.QtGui import QColor, QPainter, QPixmap
-from PySide6.QtWidgets import QTableWidgetSelectionRange
+from PySide6.QtWidgets import QMessageBox, QTableWidgetSelectionRange
 from openpyxl import Workbook
 
 from ppt_generator import ExcelMappingRule, NavigationItem, __version__
+from ppt_generator.logging_setup import LOGGER_NAME
 from ppt_generator.preview import preview_fingerprint
 from ppt_generator.scheme_service import materialize_equipment_scheme
 from ppt_generator.ui.app import create_application
@@ -57,14 +61,39 @@ class DesktopUiTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.application = create_application([])
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        logger = logging.getLogger(LOGGER_NAME)
+        for handler in list(logger.handlers):
+            handler.close()
+            logger.removeHandler(handler)
+        _UI_APP_DATA.cleanup()
+
     def setUp(self) -> None:
         self.window = MainWindow()
         self.window.show()
         self.application.processEvents()
 
     def tearDown(self) -> None:
+        self.window._collect_ui_state()
+        self.window._project_state.mark_clean(self.window.project)
         self.window.close()
         self.application.processEvents()
+
+    def test_unsaved_transition_can_cancel_or_discard(self) -> None:
+        self.window.project_name_edit.setText("尚未保存的项目名称")
+        with patch.object(
+            QMessageBox,
+            "warning",
+            return_value=QMessageBox.StandardButton.Cancel,
+        ):
+            self.assertFalse(self.window._confirm_project_transition("退出软件"))
+        with patch.object(
+            QMessageBox,
+            "warning",
+            return_value=QMessageBox.StandardButton.Discard,
+        ):
+            self.assertTrue(self.window._confirm_project_transition("退出软件"))
 
     def test_default_workspace_is_ready(self) -> None:
         self.assertEqual(

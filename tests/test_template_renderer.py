@@ -5,6 +5,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 from PIL import Image
 from pptx import Presentation
@@ -133,6 +134,24 @@ class TemplateRendererTests(unittest.TestCase):
 
             with self.assertRaises(FileExistsError):
                 render_template(source, manifest, data, output)
+
+    def test_validation_failure_preserves_existing_output(self) -> None:
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as temp_dir:
+            directory = Path(temp_dir)
+            source, manifest, data, _ = self._make_fixture(directory)
+            output = directory / "result.pptx"
+            original = b"existing-valid-output-placeholder"
+            output.write_bytes(original)
+
+            with patch(
+                "ppt_generator.template_renderer.validate_pptx_package",
+                side_effect=TemplateRenderError("模拟校验失败"),
+            ):
+                with self.assertRaisesRegex(TemplateRenderError, "模拟校验失败"):
+                    render_template(source, manifest, data, output, overwrite=True)
+
+            self.assertEqual(output.read_bytes(), original)
+            self.assertEqual(list(directory.glob(".result.tmp-*.pptx")), [])
 
     def test_rejects_manifest_hash_mismatch(self) -> None:
         with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as temp_dir:
